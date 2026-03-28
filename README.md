@@ -1,5 +1,7 @@
 # Sleep Snoring Detector
 
+![SnoringDetector Screenshot](https://raw.githubusercontent.com/bemoregt/SnoringDetector/main/ScrShot%2015.png)
+
 A macOS desktop app that records microphone audio during sleep, builds a spectrogram baseline, and automatically saves only the strongest snoring segments using an adaptive threshold.
 
 ---
