@@ -1,0 +1,23 @@
+# Build artifacts
+dist/
+build/
+*.spec.bak
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.eggs/
+
+# Virtual environments
+env/
+venv/
+.env
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
