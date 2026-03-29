@@ -6,6 +6,9 @@ on:
       - intel-mac
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: macos-14   # arm64 runner with Rosetta 2
