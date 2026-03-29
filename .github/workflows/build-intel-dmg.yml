@@ -1,4 +1,4 @@
-name: Build Universal (Intel + Apple Silicon) DMG
+name: Build Intel Mac DMG (x86_64 via Rosetta)
 
 on:
   push:
@@ -8,32 +8,35 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-14   # arm64 runner with Rosetta 2
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
+      - name: Install Python 3.11 (universal2) from python.org
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pyinstaller
+          curl -LO https://www.python.org/ftp/python/3.11.9/python-3.11.9-macos11.pkg
+          sudo installer -pkg python-3.11.9-macos11.pkg -target /
+          # Verify universal2 Python exists
+          file /Library/Frameworks/Python.framework/Versions/3.11/bin/python3.11
 
-      - name: Verify environment
+      - name: Install dependencies via Rosetta (x86_64)
         run: |
-          python -c "import platform; print('Python arch:', platform.machine())"
-          python -c "import numpy; print('NumPy:', numpy.__version__)"
-          pyinstaller --version
+          PYTHON="arch -x86_64 /Library/Frameworks/Python.framework/Versions/3.11/bin/python3.11"
+          PIP="arch -x86_64 /Library/Frameworks/Python.framework/Versions/3.11/bin/pip3"
 
-      - name: Build universal2 app with PyInstaller
+          $PIP install --upgrade pip
+          $PIP install -r requirements.txt
+          $PIP install pyinstaller
+
+          # Verify we are building for x86_64
+          $PYTHON -c "import platform; print('Arch:', platform.machine())"
+
+      - name: Build with PyInstaller (x86_64 via Rosetta)
         run: |
-          pyinstaller snoring_detector.spec --noconfirm --clean
+          arch -x86_64 /Library/Frameworks/Python.framework/Versions/3.11/bin/pyinstaller \
+            snoring_detector.spec --noconfirm --clean
 
       - name: Verify binary architecture
         run: |
@@ -42,8 +45,8 @@ jobs:
       - name: Create DMG
         run: |
           APP="dist/SnoringDetector.app"
-          DMG_NAME="SnoringDetector-universal2.dmg"
-          TMP_DMG="tmp_universal.dmg"
+          DMG_NAME="SnoringDetector-intel-x86_64.dmg"
+          TMP_DMG="tmp_intel.dmg"
 
           hdiutil create -size 300m -fs HFS+ -volname "SnoringDetector" "$TMP_DMG"
           DEVICE=$(hdiutil attach "$TMP_DMG" | grep /Volumes | awk '{print $NF}')
@@ -60,36 +63,39 @@ jobs:
       - name: Upload DMG as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SnoringDetector-universal2
-          path: SnoringDetector-universal2.dmg
+          name: SnoringDetector-intel-x86_64
+          path: SnoringDetector-intel-x86_64.dmg
           retention-days: 30
 
       - name: Write release notes
         run: |
           cat > release_notes.md << 'NOTES'
-          ## Sleep Snoring Detector v1.0.0 (Universal2)
+          ## Sleep Snoring Detector v1.0.0 (Intel Mac x86_64)
 
-          Intel Mac + Apple Silicon 모두 지원하는 Universal2 빌드입니다.
+          Intel Mac 전용 빌드입니다.
 
           ### 요구사항
           - macOS 12.0 (Monterey) 이상
-          - Intel Mac (x86_64) 또는 Apple Silicon (arm64)
+          - Intel Mac (x86_64)
 
           ### 설치 방법
-          1. `SnoringDetector-universal2.dmg` 다운로드
+          1. `SnoringDetector-intel-x86_64.dmg` 다운로드
           2. DMG를 열고 **SnoringDetector**를 **Applications**으로 드래그
           3. 첫 실행 시 우클릭 → 열기 (Gatekeeper 우회)
+
+          ### 참고
+          - Apple Silicon(M1/M2/M3) Mac 사용자는 arm64 릴리즈를 사용하세요.
           NOTES
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v1.0.0-universal"
+          TAG="v1.0.0-intel"
           gh release delete "$TAG" --yes 2>/dev/null || true
           git tag -d "$TAG" 2>/dev/null || true
 
           gh release create "$TAG" \
-            SnoringDetector-universal2.dmg \
-            --title "Sleep Snoring Detector v1.0.0 (Universal2 - Intel + Apple Silicon)" \
+            SnoringDetector-intel-x86_64.dmg \
+            --title "Sleep Snoring Detector v1.0.0 (Intel Mac x86_64)" \
             --notes-file release_notes.md
