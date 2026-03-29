@@ -75,7 +75,7 @@ exe = EXE(
     upx=False,
     console=False,
     argv_emulation=False,
-    target_arch='x86_64',
+    target_arch='universal2',
     codesign_identity=None,
     entitlements_file=None,
 )
@@ -98,7 +98,7 @@ app = BUNDLE(
     version='1.0.0',
     info_plist={
         'CFBundleName':                'SnoringDetector',
-        'CFBundleDisplayName':         'Sleep Snoring Detector (Intel)',
+        'CFBundleDisplayName':         'Sleep Snoring Detector',
         'CFBundleVersion':             '1.0.0',
         'CFBundleShortVersionString':  '1.0.0',
         'NSMicrophoneUsageDescription':
